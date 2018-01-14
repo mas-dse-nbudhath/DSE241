@@ -45,25 +45,25 @@
 
 			//console.log(countrylist);
 
-			 
+			console.log(countries);
 
-			// var select = d3.select('body')
-		 //  .append('select')
-		 //  	.attr('class','select')
-		 //    .on('change',onchange)
+			var select = d3.select('body')
+				.append('select')
+					.attr('class','select')
+					.on('change',onchange)
 
-			// var options = select
-		 //  .selectAll('option')
-			// .data(countrylist).enter()
-			// .append('option')
-			// 	.text(function (d) { return d; });
+					var options = select
+				.selectAll('option')
+					.data(['x','y']).enter()
+					.append('option')
+						.text(function (d,i) { return d; });
 
-			// function onchange() {
-			// selectValue = d3.select('select').property('value')
-			// d3.select('body')
-			// 	.append('p')
-			// 	.text(selectValue + ' is the last selected option.')
-			// };
+					function onchange() {
+					selectValue = d3.select('select').property('value')
+					d3.select('body')
+						.append('p')
+						.text(selectValue + ' is the last selected option.')
+			};
 
 
 
