@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/d3.min.js"></script>
+    <script src="./js/jquery-3.2.1.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="./js/linq.js" type="text/javascript"></script>
+
+<script>
+    var data;
+    var result;
+
+    d3.json('data/exercise2-olympics.json', function (error,rawData) {
+        data = rawData;
+
+        var q = Enumerable.From(
+        Enumerable.From(data)
+        .Select(function (x) {
+            if(x.Medal == 'Gold') {
+                x.MedalValue = 1;
+            }
+            else if(x.Medal == 'Silver') {
+                x.MedalValue = .5;
+            }
+            else {
+                x.MedalValue = .25;
+            }
+            
+            if(x.Country.indexOf('Germany') > -1) {
+                x.Country = 'Germany';
+            }
+            
+            return x;
+        }) 
+        )
+
+        .GroupBy("{ country: $.Country, year: $.Year, medal: $.Medal }", 
+                null,
+                function (key, g) {
+                    var result = {
+                        country: key.country,
+                        total: g.Sum("$.MedalValue")
+                    }
+                    return result;
+                }, 
+                function (x) { 
+                    return x.country 
+                })
+        .Select(function(x) {
+                return {
+                    'Country' : x.country,
+                    'Score': x.total
+                };
+            })
+        .ToArray();
+
+        result = Enumerable.From(q)
+        .Where(function(x) { 
+        return x.Country != 'Soviet Union';
+        })
+        .OrderByDescending("$.Score")
+        .Take(10)
+        .ToArray();
+        
+
+    });
+
+
+
+</script>
+
+
+
+<style>
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="thisone">
+        <div id="dd"></div>
+        <div id="chart"></div>        
+        <div id="res"></div>
+
+</div>
+
+
+
+</body>
+</html>    
