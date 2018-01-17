@@ -17,13 +17,23 @@
 <script>
     var data;
     var result;
-    var defaultCountryValue = "China";
+    var defaultCountryValue = "United States";
 
-    function tabulate(data, columns) {
-          var table = d3.select('#tbl1')
+    function getFlagCode() {
+        var j = $.ajax({
+            type: "GET", dataType: 'json',
+            url: 'data/flag.json',
+            cache: false,
+            async: false
+        }).responseJSON;
+        return j;     
+    }
+
+    function tabulate(data, columns, id) {
+        var table = d3.select('#' + id);
         //   table.attr("class","table table-striped table-hover");
         //   table.attr("style","height : 35px;")
-          var thead = table.append('thead')
+          var thead = table.append('thead');
           var tbody = table.append('tbody');
           
 
@@ -53,10 +63,18 @@
             })
             .enter()
             .append('td')
-              .text(function (d) { return d.value; });
+            //   .text(function (d) { return d.value; });
+                .html(function (d) { 
+                if(d.column == 'Country') {
+                    return '<img src="4x3/us.svg" style="width : 18px; height : 14.5px;">&nbsp;<span>' + d.value + '</span>';
+                }
+                else {
+                    return d.value;
+                }
+            });            
 
 
-          return table;
+            return table;
       }    
 
 
@@ -121,7 +139,7 @@
             var nObj = {};                
             medals.map(function(r2, i2) {
                 nObj[r2.Medal] = r2.Total;
-                console.log(nObj);
+                // console.log(nObj);
             });
             
             var gold = 0, silver=0, bronze=0;
@@ -146,7 +164,15 @@
             return r;
         });
 
-        var table = tabulate(result2, ['Rank', 'Country', 'G','S','B','Score'])
+
+        d3.json('data/flag.json', function(error, fdata) {
+            var table = tabulate(result2, ['Rank', 'Country', 'G','S','B','Score'], "tbl1");
+        });
+
+
+
+
+
     }
 
 
@@ -233,11 +259,11 @@
                         
                         .ToArray();
 
-        console.log(medals);
+        // console.log(medals);
 
         var md=getMedalCount(medals);
 
-        console.log(md);
+        // console.log(md);
         
         var d = md.map(function(d) {
             var gold = 0, silver=0, bronze=0;
@@ -344,8 +370,6 @@
         generateChart(data);
     });
 
-
-
 </script>
 
 
@@ -418,8 +442,10 @@
     </div>
 </div>
 
-<img src="4x3/us.svg" style="width : 25px; height : 18.75px;">
 
+<script>
+
+</script>
 
 </body>
 </html>    
