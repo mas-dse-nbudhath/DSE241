@@ -9,13 +9,15 @@
     <script src="./js/linq.js" type="text/javascript"></script>
 <style>
     .fix-table-height{
-      max-height:315px;
+      /* max-height:315px; */
+      max-height: 455px;
     }   
 
 </style>
 <script>
     var data;
     var result;
+    var defaultCountryValue = "Germany";
 
     function tabulate(data, columns) {
           var table = d3.select('#tbl1')
@@ -105,10 +107,16 @@
         return x.Country != 'Soviet Union';
         })
         .OrderByDescending("$.Score")
-        .Take(10)
+        // .Take(10)
         .ToArray();
 
-        var table = tabulate(result, ['Country', 'Score'])
+        var result = result.map(function(r, i) {
+            r.Rank = i + 1;
+            console.log(r);
+            return r;
+        });
+
+        var table = tabulate(result, ['Rank', 'Country', 'Score'])
     }
 
 
@@ -189,7 +197,7 @@
 
 
         var medals = Enumerable.From(data)
-                        .Where(function(x){ return x.Country=="United States"})
+                        .Where(function(x){ return x.Country==defaultCountryValue})
 
                         .GroupBy(null,null,"{Country:$.Country, Year:$.Year, Medal: $.Medal, Total: $$.Count() }",
                                             "'' + $.Year + '-' + $.Medal")
@@ -359,7 +367,7 @@
                    <use xlink:href="#ring" stroke="#009f3d" transform="translate(11,9) rotate(180)"/>
                 </g>
              </svg>
-        <span style="font-family:Raley Script; background-color: none; text-align:center; text-anchor:middle; float:left; top:15px;"><h4>Winter Olympics World Ranking</h4></span></div>
+        <span style="font-family:Raley Script; background-color: none; text-align:center; text-anchor:middle; float:left; top:15px;"><h4>Winter Olympics World Ranking</h4></span><p>&nbsp;</p><span style="font-size: 75%">[based on 1928-2006 data]</span></div>
     <div class="row">
         <div class="col-md-4" style="margin-top: 5px;">
                 <div class="table-responsive fix-table-height" style="background-color: none;">
