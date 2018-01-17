@@ -17,7 +17,7 @@
 <script>
     var data;
     var result;
-    var defaultCountryValue = "Germany";
+    var defaultCountryValue = "China";
 
     function tabulate(data, columns) {
           var table = d3.select('#tbl1')
@@ -65,13 +65,13 @@
         Enumerable.From(data)
         .Select(function (x) {
             if(x.Medal == 'Gold') {
-                x.MedalValue = 1;
+                x.MedalValue = 3;
             }
             else if(x.Medal == 'Silver') {
-                x.MedalValue = .5;
+                x.MedalValue = 2;
             }
             else {
-                x.MedalValue = .25;
+                x.MedalValue = 1;
             }
             
             if(x.Country.indexOf('Germany') > -1) {
@@ -110,13 +110,43 @@
         // .Take(10)
         .ToArray();
 
-        var result = result.map(function(r, i) {
+        var result2 = result.map(function(r, i) {    
+            var medals = Enumerable.From(data)
+                        .Where(function(x){ return x.Country==r.Country})
+                        .GroupBy(null,null,"{Country:$.Country, Medal: $.Medal, Total: $$.Count() }",
+                                           "$.Medal")
+                        .OrderBy("$.Year","$.Medal")
+                        .ToArray();
+            
+            var nObj = {};                
+            medals.map(function(r2, i2) {
+                nObj[r2.Medal] = r2.Total;
+                console.log(nObj);
+            });
+            
+            var gold = 0, silver=0, bronze=0;
+        
+            if(Object.keys(nObj).indexOf('Gold') > -1) {
+                gold = nObj.Gold;
+            }
+        
+            if(Object.keys(nObj).indexOf('Silver') > -1) {
+                silver = nObj.Silver;
+            }
+        
+            if(Object.keys(nObj).indexOf('Bronze') > -1) {
+                bronze = nObj.Bronze;
+            }
+            
+            r.G = gold;
+            r.S = silver;
+            r.B = bronze;
+
             r.Rank = i + 1;
-            console.log(r);
             return r;
         });
 
-        var table = tabulate(result, ['Rank', 'Country', 'Score'])
+        var table = tabulate(result2, ['Rank', 'Country', 'G','S','B','Score'])
     }
 
 
@@ -160,13 +190,11 @@
                     
                     c = {};
                     for(var idx in a) {
-                        console.log(idx);
                         var obj = (a[idx]);
-                        console.log(obj);
                         //Object.assign({}, obj, c);
                         extend(c, obj);
                     }
-                    console.log(c);
+                    // console.log(c);
                     
                         
                     return { Year : yx.year, Medals : c};
@@ -205,12 +233,16 @@
                         
                         .ToArray();
 
-        var md=getMedalCount(medals); 
+        console.log(medals);
+
+        var md=getMedalCount(medals);
+
+        console.log(md);
         
         var d = md.map(function(d) {
             var gold = 0, silver=0, bronze=0;
 
-            console.log(Object.keys(d.Medals).indexOf('Gold') > -1);
+            // console.log(Object.keys(d.Medals).indexOf('Gold') > -1);
 
             if(Object.keys(d.Medals).indexOf('Gold') > -1) {
                 gold = d.Medals.Gold;
@@ -233,7 +265,6 @@
             };
         });            
             
-           
     data=d; //d has now the structure wanted by data, easier to assign data as d instead of changing everywhere in code
 
     var keys = ['Gold','Silver','Bronze'];
@@ -266,7 +297,7 @@
         .attr("dy", ".35em")
         .attr("transform", "rotate(90)")
         .style("text-anchor", "start");
-      
+    
 
     g.append("g")
       .attr("class", "axis")
@@ -388,46 +419,6 @@
 </div>
 
 <img src="4x3/us.svg" style="width : 25px; height : 18.75px;">
-
-
-<div class="container">
-        <h2>Basic Writeup (Draft)</h2>
-        <div class="panel panel-default">
-          <div class="panel-body">
-              
-
-                
-        
-                <b>Motivation:</b>
-                <p>
-                        Considering the data compiled from 1928-1928 winter olympic dataset, the ranking shows that even with its growing economic might, China has still a long way to go before cracking the top ten ranking of countries participating in the winter olympics.  However, the government never relinquished her eyes for the ultimate golden prize and wasted no time in planting seeds that would someday bring the same dominating performance she displayed in the summer olympics.
-                
-                        Although China only started participating since 1992, (based on simple scoring system) China managed to rank #15th in the world in the power rankings of countries involved in the winter games ahead of United Kingdom and behind her cousin Asian countries of South Korea and Japan.
-                        
-                        In this scoring system, 7 of 10 top countries are European countries, while only United States and Canada made it from North America.  Completing the top ten is Russia which the ranking could be higher if the scoring system take into account the medals won by Russians from the former Soviet Union.  Since, it could be argued that colder geographic locations play a crucial role in determining the success of a country in playing these winter games, China should feel pretty good in her chance to someday win more medals in the future because China’s land area is so vast that her athletes won’t run out of ice and snow to practice all year round. 
-        
-                </p>
-                
-                
-                <p>
-                        <b>Tasks:</b> 
-                
-                        To establish a simple ranking system and determine the seeding, each country is awarded a full point for gold, a half point for silver, and a quarter for bronze.  Then to get the average score, all the points accumulated are added then divided by the number of events participated.
-        
-                </p>
-
-                <p>
-                        <b>Visualization:</b>
-                
-                        blah, blah            
-                    
-        
-                </p>
-                
-            
-            </div>
-        </div>
-      </div>
 
 
 </body>
