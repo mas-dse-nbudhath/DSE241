@@ -50,6 +50,7 @@
 
 <script>
     var defaultCountryValue = "China";
+
     var svg = d3.select("#chart"),
         margin = {top: 20, right: 20, bottom: 30, left: 40},
         width = +svg.attr("width") - margin.left - margin.right,
@@ -69,6 +70,14 @@
     var d;
     
     function dropdown(data) {
+
+        function onchange() {
+            selectValue = d3.select('select').property('value')
+            console.log(selectValue);
+            var d = quickFunction(gdata, selectValue);
+            updateChart(d); 
+        }
+
 
         var countries = Enumerable.From(data)
                           .GroupBy("{ country: $.Country }", null,
@@ -98,17 +107,10 @@
                 return d; 
             })
             .property("selected", function(d){
-            console.log(defaultCountryValue);
-            return d === defaultCountryValue;
+                console.log(defaultCountryValue);
+                return d === defaultCountryValue;
             })
-            }
-
-            function onchange() {
-                selectValue = d3.select('select').property('value')
-                console.log(selectValue);
-                var d = quickFunction(gdata, selectValue);
-                updateChart(d); 
-            };
+    }
 
 
 
@@ -166,8 +168,6 @@
     }   
 
     var gdata;  
-
-
 
     function quickFunction(data, defaultCountryValue) {
             var medals = Enumerable.From(data)
@@ -312,10 +312,12 @@
 
         gdata = data;
 
+        dropdown(data); 
+
         var d = quickFunction(data, defaultCountryValue);
                
-                
-        dropdown(data); 
+        console.log(d);
+        
 
         data=d; //d has now the structure wanted by data, easier to assign data as d instead of changing everywhere in code
         console.log("printing values of data");
