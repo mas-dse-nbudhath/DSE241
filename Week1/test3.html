@@ -16,8 +16,8 @@
 </style>
 <script>
     var data, gdata;
-    var result;
     var defaultCountryValue = "United States";
+    var defaultYear = "2006";    
 
     function getFlagCode() {
         var j = $.ajax({
@@ -162,112 +162,154 @@
             return table;
     }    
 
-    var defaultYear = "2006";
+
 
 
     function getTableResult(data) {
+        console.log("data");
+        console.log(data);
+
         var q = Enumerable.From(
-        Enumerable.From(data)
-        .Where(function(x) {
-            return x.Year == defaultYear;
-        })
-        .Select(function (x) {
-            if(x.Medal == 'Gold') {
-                x.MedalValue = 3;
-            }
-            else if(x.Medal == 'Silver') {
-                x.MedalValue = 2;
-            }
-            else {
-                x.MedalValue = 1;
-            }
-            
-            if(x.Country.indexOf('Germany') > -1) {
-                x.Country = 'Germany';
-            }
-            
-            return x;
-        }) 
+            Enumerable.From(data)
+            .Where(function(x) {
+                return x.Year == defaultYear;
+            })
+            .Select(function (x) {
+                if(x.Medal == 'Gold') {
+                    x.Value = 1;
+                    x.MedalValue = 3;
+                }
+                else if(x.Medal == 'Silver') {
+                    x.Value = 1;
+                    x.MedalValue = 2;
+                }
+                else {
+                    x.Value = 1;
+                    x.MedalValue = 1;
+                }
+        
+                if(x.Country.indexOf('Germany') > -1) {
+                    x.Country = 'Germany';
+                }
+        
+                return x;
+            }) 
         )
         .GroupBy("{ country: $.Country, year: $.Year, medal: $.Medal }", 
                 null,
                 function (key, g) {
-                    var result = {
+                    var qr = {
                         country: key.country,
+                        year: key.year,
+                        medal: key.medal,
+                        count: g.Count($.Medal),
                         total: g.Sum("$.MedalValue")
                     }
-                    return result;
+                    return qr;
                 }, 
                 function (x) { 
-                    return x.country 
+                    return x.country  + ':' + x.year + ':' + x.medal;
                 })
         .Select(function(x) {
                 return {
                     'Country' : x.country,
-                    'Score': x.total
+                    'Medal' : x.medal,
+                    'Count' : x.count,
+                    'Point': x.total
                 };
             })
-        .ToArray();
-
-        // console.log("break it down here.")
-        // console.log(q);
-
-        result = Enumerable.From(q)
-        .Where(function(x) { 
-            return x.Country != 'Soviet Union';
+        .ToArray();    
+        
+        var result = Enumerable.From(q)
+            .Where(function(x) { 
+                return x.Country != 'Soviet Union';
         })
-        .OrderByDescending("$.Score")
+        .OrderBy("$.Country")
         // .Take(10)
-        .ToArray();
-
-        // console.log("result");
-        // console.log(result);
-
-        var result2 = result.map(function(r, i) {    
-            var medals = Enumerable.From(data)
-                        .Where(function(x){ return x.Country==r.Country})
-                        .GroupBy(null,null,"{Country:$.Country, Medal: $.Medal, Total: $$.Count() }",
-                                           "$.Medal")
-                        .OrderBy("$.Year","$.Medal")
-                        .ToArray();
-            
-            var nObj = {};                
+        .ToArray(); 
+        
+        var unique = Enumerable.From(result)
+            .GroupBy("{ country: $.Country }", null,
+                function (key, g) {
+                    var result = {
+                        country: key.country
+                    }
+                    return result;
+                    }, function (x) { return x.country })
+            .Select(function(x) {
+            return { Country : x.country };
+        }).ToArray();
+        
+        var medals = Enumerable.From(q)
+                .Where(function(x){ return x.Country=="United States"})
+                .OrderBy("$.Year","$.Medal")
+                .ToArray();
+        
+        var nObj = {};                
+        medals.map(function(r2, i2) {
+            console.log(r2);
+            nObj[r2.Medal] = { Count : r2.Count, Point : r2.Point};
+        });                
+        
+        var result2 = unique.map(function(r, i) {    
+            //console.log(r.Country); 
+            var medals = Enumerable.From(q)
+                    .Where(function(x){ return x.Country==r.Country})
+                    .OrderBy("$.Year","$.Medal")
+                    .ToArray();
+            //console.log(medals);
+        
+            var nObj = {};  
+            var TotalPoints = 0;
             medals.map(function(r2, i2) {
-                nObj[r2.Medal] = r2.Total;
+                console.log(r2);
+                nObj[r2.Medal] = r2.Count;
                 // console.log(nObj);
-            });
-            
+                TotalPoints = TotalPoints + r2.Point;
+            });    
+        
             var gold = 0, silver=0, bronze=0;
         
             if(Object.keys(nObj).indexOf('Gold') > -1) {
-                gold = nObj.Gold;
+            gold = nObj.Gold;
             }
         
             if(Object.keys(nObj).indexOf('Silver') > -1) {
-                silver = nObj.Silver;
+            silver = nObj.Silver;
             }
         
             if(Object.keys(nObj).indexOf('Bronze') > -1) {
-                bronze = nObj.Bronze;
+            bronze = nObj.Bronze;
             }
-            
+        
             r.G = gold;
             r.S = silver;
             r.B = bronze;
+            r.Score = TotalPoints;
+        
+            return r;
+        
+        });
 
+        result3 = Enumerable.From(result2)
+        .OrderByDescending("$.Score")
+        .ToArray();
+
+        result4 = result3.map(function(r, i) {
             r.Rank = i + 1;
             return r;
-        }); 
+        });
 
-        return result2;       
+        return result4;       
     }    
 
     function generateTable(data) {
 
         d3.json('data/flag.json', function (error, fdata) {
             gFlagData = fdata;            
-            var result2 = getTableResult(data);
-            var table = tabulate(result2, fdata, ['Rank', 'Country', 'G','S','B','Score'], "tbl1");
+            var result4 = getTableResult(data);
+            console.log(result4);
+            var table = tabulate(result4, fdata, ['Rank', 'Country', 'G','S','B','Score'], "tbl1");
         });
 
     }
@@ -603,7 +645,7 @@ var gFlagData;
     }
 
     function updateChart(data) {
-        var svg = d3.select("#chart");
+        // svg = d3.select("#chart");
 
         svg.select("g").selectAll("g").remove();
 
