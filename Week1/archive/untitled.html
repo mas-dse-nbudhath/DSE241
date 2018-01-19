@@ -1,0 +1,82 @@
+<HTML>
+    <head>
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/d3.min.js"></script>
+    <script src="./js/jquery-3.2.1.min.js"></script>
+	</head>
+<body>
+ 
+<script>
+
+	$(document).ready( function() {
+
+		var countries={};
+		var countrylist=[];
+
+		d3.json('data/exercise2-olympics.json', function (error,data) {
+
+			//console.log(data);
+
+			for(var element in data) {
+				var row = data[element];
+				var country = row.Country;
+
+				// console.log(country);
+				
+				var exists = country in countries;
+				if(!exists) {
+					countries[country] = [];
+				}
+
+				countries[country].push(row);
+
+				
+			}
+
+			//console.log(countries);
+
+			for(var item in countries) {
+				console.log(item);
+				console.log(countries[item]);
+				//countrylist.push(item.Country);
+
+			}
+
+			//console.log(countrylist);
+
+			console.log(countries);
+
+			var select = d3.select('body')
+				.append('select')
+					.attr('class','select')
+					.on('change',onchange)
+
+					var options = select
+				.selectAll('option')
+					.data(['x','y']).enter()
+					.append('option')
+						.text(function (d,i) { return d; });
+
+					function onchange() {
+					selectValue = d3.select('select').property('value')
+					d3.select('body')
+						.append('p')
+						.text(selectValue + ' is the last selected option.')
+			};
+
+
+
+
+		});
+
+
+	});
+
+
+</script>
+
+
+</body>
+
+</html>

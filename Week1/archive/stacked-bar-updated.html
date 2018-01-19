@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/d3.min.js"></script>
+    <script src="./js/jquery-3.2.1.min.js"></script>
+    <script src="http://d3js.org/d3.v4.min.js"></script>
+    <script src="./js/linq.js" type="text/javascript"></script>
+
+
+<style>
+
+.axis .domain {
+  display: none;
+}
+
+</style>
+</head>
+<svg width="600" height="500"></svg>
+
+<script>
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        
+
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
+
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+    var z = d3.scaleOrdinal()
+        .range(["#FFDF00", "#c0c0c0", "#cd7f32"]);
+
+    function getMedalCount(x) {
+            function extend(obj, src) {
+                    for (var key in src) {
+                    if (src.hasOwnProperty(key)) obj[key] = src[key];
+                }
+                return obj;
+            }
+
+            var y = Enumerable.From(x)
+            .GroupBy("{ year: $.Year }", 
+                null,
+                function (key, g) {
+                    var result = {
+                        year: key.year
+                    }
+                    return result;
+                }, 
+                function (yx) { 
+                    return yx.year;
+                })
+            .Select(function(yx) {
+                var a = Enumerable.From(x)
+                    .Where(function(ax) {
+                        return ax.Year == yx.year;
+                    })
+                    .Select(function(ax) {
+                        var j = {};
+                        j[ax.Medal] = ax.Total;
+                                            
+                        return j;
+                    })
+                    .ToArray();
+                
+                var m = {};
+                m.Year = yx.year;
+                m.Medals = a;
+                
+                c = {};
+                for(var idx in a) {
+                    console.log(idx);
+                    var obj = (a[idx]);
+                    console.log(obj);
+                    //Object.assign({}, obj, c);
+                    extend(c, obj);
+                }
+                console.log(c);
+                
+                    
+                return { Year : yx.year, Medals : c};
+            })
+            .ToArray();
+            return y; 
+    }      
+
+    d3.json('data/exercise2-olympics.json', function (error,data) {
+            var medals = Enumerable.From(data)
+                        .Where(function(x){ return x.Country=="United States"})
+                        
+                        .GroupBy(null,null,"{Country:$.Country, Year:$.Year, Medal: $.Medal, Total: $$.Count() }",
+                                            "'' + $.Year + '-' + $.Medal")
+                        .OrderBy("$.Year","$.Medal")
+                        
+                        .ToArray();
+    
+            
+
+
+            var md=getMedalCount(medals); 
+            
+            var d = md.map(function(d) {
+
+                var gold = 0, silver=0, bronze=0;
+
+                console.log(Object.keys(d.Medals).indexOf('Gold') > -1);
+
+                if(Object.keys(d.Medals).indexOf('Gold') > -1) {
+                    gold = d.Medals.Gold;
+                }
+
+                if(Object.keys(d.Medals).indexOf('Silver') > -1) {
+                    silver = d.Medals.Silver;
+                }
+                
+                if(Object.keys(d.Medals).indexOf('Bronze') > -1) {
+                    bronze = d.Medals.Bronze;
+                }
+
+                return {
+                        Year: d.Year,
+                        Gold: gold,
+                        Silver: silver,
+                        Bronze: bronze,
+                        total: gold+silver+bronze
+                };
+
+
+                
+            });            
+            
+           
+    data=d; //d has now the structure wanted by data, easier to assign data as d instead of changing everywhere in code
+
+    var keys = ['Gold','Silver','Bronze'];
+
+    x.domain(data.map(function(d) { return d.Year; }));
+    y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+    z.domain(keys);
+
+    g.append("g")
+    .selectAll("g")
+    .data(d3.stack().keys(keys)(data))
+    .enter().append("g")
+      .attr("fill", function(d) { return z(d.key); })
+    .selectAll("rect")
+    .data(function(d) { return d; })
+    .enter().append("rect")
+      .attr("x", function(d) { return x(d.data.Year); })
+
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+      .attr("width", x.bandwidth());
+
+    g.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+    .selectAll("text")
+        .attr("y", 0)
+        .attr("x", 8)
+        .attr("dy", ".35em")
+        .attr("transform", "rotate(90)")
+        .style("text-anchor", "start");
+      
+
+    g.append("g")
+      .attr("class", "axis")
+      .call(d3.axisLeft(y).ticks(null, "s"))
+
+    .append("text")
+      .attr("x", 2)
+      .attr("y", y(y.ticks().pop()) + 0.5)
+      .attr("dy", "0.32em")
+      .attr("fill", "#000")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .text("Olympics Medals");
+
+    var legend = g.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "end")
+    .selectAll("g")
+        .data(keys.slice().reverse())
+        .enter().append("g")
+        .attr("transform", function(d, i) { return "translate(-100," + i * 20 + ")"; });
+
+    legend.append("rect")
+      .attr("x", width - 19)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", z);
+
+    legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.32em")
+      .text(function(d) { return d + ' ' + 'Medal'; });
+      
+            
+     });
+
+</script>

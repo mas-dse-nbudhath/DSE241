@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/d3.min.js"></script>
+    <script src="./js/jquery-3.2.1.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="./js/linq.js" type="text/javascript"></script>
+    <style>
+
+        .axis {
+          font: 10px sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+    </style>
+</head>
+        <body>
+            <script type="text/javascript">
+        // x-axis, y-axis, width, and height
+            var parseDate = d3.time.format("%Y").parse;
+            var defaultValue = "United States";
+            var svg;
+            var x, y, width, height;
+
+            function getQuery(data, country, medalType) {
+                var result = Enumerable.From(data)
+                                .Where(function(x) {
+                                    return x.Country == country && x.Medal == medalType
+                                })
+                                .GroupBy("{ country: $.Country, year: $.Year, medal: $.Medal }", null,
+                                    function (key, g) {
+                                        var result = {
+                                            country: key.country,
+                                            year: key.year,
+                                            medal: key.medal,
+                                            total: g.Count("$.Medal")
+                                        }
+                                        return result;
+                                        }, function (x) { return x.country + ':' + x.year + ':' + x.medal })
+                                .OrderBy("$.Year")
+                                .Select(function(x){
+                                        return {
+                                            'Country' : x.country,
+                                            'Year': x.year, 
+                                            'Total': x.total
+                                        };
+                                })     
+                                .ToArray();
+                return result;
+            }
+
+            function update(data, filterString) {
+
+                    var result = getQuery(data, filterString, 'Gold');
+
+                    result.forEach(function(d) {
+                        d.Year = parseDate(d.Year);
+                        d.Total = +d.Total;
+                    });
+
+                    console.log(result);
+
+
+                    d3.selectAll("rect")
+                        .remove()
+
+                    
+                    svg.selectAll('bar').data(result)
+                    .enter().append("rect")
+                    .style("fill", "steelblue")
+                    .attr("x", function(d) { return x(d.Year); })
+                    .attr("width", x.rangeBand())
+                    .attr("y", function(d) { return y(d.Total); })
+                    .attr("height", function(d) { return height - y(d.Total); });  
+
+                    // var rects = d3.selectAll("rect")
+                    // .data(result)
+                    // .style("fill", "steelblue")
+                    // .attr("x", function(d) { return x(d.Year); })
+                    // .attr("width", x.rangeBand())
+                    // .attr("y", function(d) { return y(d.Total); })
+                    // .attr("height", function(d) { return height - y(d.Total); });  
+
+                    // console.log(rects);
+                
+                        
+                    
+
+                    
+            }
+
+
+            function renderBar(data, defaultValue) {
+                var margin = {top: 20, right: 20, bottom: 70, left: 40};
+
+                width = 600 - margin.left - margin.right,
+                height = 300 - margin.top - margin.bottom;
+                
+                    
+                x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+                
+                y = d3.scale.linear().range([height, 0]);
+                
+                var xAxis = d3.svg.axis()
+                    .scale(x)
+                    .orient("bottom")
+                    .tickFormat(d3.time.format("%Y"));
+                
+                var yAxis = d3.svg.axis()
+                    .scale(y)
+                    .orient("left")
+                    .ticks(10);
+                
+                svg = d3.select("div#chart").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                        .attr("transform", 
+                            "translate(" + margin.left + "," + margin.top + ")"); 
+
+
+
+
+
+                    var result = getQuery(data, defaultValue, 'Gold');
+
+                    result.forEach(function(d) {
+                        d.Year = parseDate(d.Year);
+                        d.Total = +d.Total;
+                    });
+
+                    console.log(result);
+
+                    x.domain(result.map(function(d) { return d.Year; }));
+                    y.domain([0, d3.max(result, function(d) { return d.Total; })]);
+
+                    svg.append("g")
+                        .attr("class", "x axis")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(xAxis)
+                        .selectAll("text")
+                        .style("text-anchor", "end")
+                        .attr("dx", "-.8em")
+                        .attr("dy", "-.55em")
+                        .attr("transform", "rotate(-90)" );
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                        .text("Gold Medal Count");  
+                        
+                    svg.selectAll("bar")
+                        .data(result)
+                        .enter().append("rect")
+                        .style("fill", "steelblue")
+                        .attr("x", function(d) { return x(d.Year); })
+                        .attr("width", x.rangeBand())
+                        .attr("y", function(d) { return y(d.Total); })
+                        .attr("height", function(d) { return height - y(d.Total); });    
+
+
+            }
+
+
+
+            $(document).ready( function() {
+
+
+
+                d3.json('data/exercise2-olympics.json', function (error,data) {
+                    var countries = Enumerable.From(data)
+                                .GroupBy("{ country: $.Country }", null,
+                                    function (key, g) {
+                                        var result = {
+                                            country: key.country
+                                        }
+                                        return result;
+                                        }, function (x) { return x.country })
+                                .OrderBy("$.Year")
+                                .Select(function(x){
+                                        return x.country;
+                                })     
+                                .ToArray();
+
+                    console.log(countries);
+
+                    var select = d3.select('#dd')
+                    .append('select')
+                    .attr('class','select')
+                    .on('change',onchange)
+
+                    var options = select
+                    .selectAll('option')
+                    .data(countries).enter()
+                    .append('option')
+                    .attr("value", function (d) { return d; })
+                    .property("selected", function(d){
+                        console.log(d);
+                        console.log(defaultValue);
+                        return d === 'United States';
+                    })
+                    .text(function (d) { return d; });
+
+                    function onchange() {
+                        selectValue = d3.select('select').property('value')
+                        d3.select('#res')
+                            .append('p')
+                            .text(selectValue + ' is the last selected option.')
+
+                        update(data, selectValue);
+                    };
+
+
+                    renderBar(data, defaultValue);
+
+                });
+            });
+            
+        </script>
+
+    </body>        
+</html>  
+
+
+
+<!-- <body>
+
+    <div id="thisone">
+            <div id="dd"></div>
+            <div id="chart"></div>        
+            <div id="res"></div>
+
+    </div>
+
+
+
+</body> -->
+    
